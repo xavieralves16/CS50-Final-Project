@@ -24,3 +24,27 @@ def get_products():
         "price": p.price,
         "description": p.description
     } for p in products])
+
+@products_bp.route("/add", methods=["GET", "POST"])
+def add_product():
+    """Add a new product"""
+    if request.method == "POST":
+        name = request.form.get("name")
+        description = request.form.get("description")
+        price = request.form.get("price")
+        image_url = request.form.get("image_url")
+
+        new_product = Product(name=name, description=description, price=float(price), image_url=image_url)
+        db.session.add(new_product)
+        db.session.commit()
+
+        return render_template("add_product.html", title="Add Product", success=True)
+
+    return render_template("add_product.html", title="Add Product")
+
+@products_bp.route("/delete/<int:product_id>", methods=["POST"])
+def delete_product(product_id):
+    product = Product.query.get_or_404(product_id)
+    db.session.delete(product)
+    db.session.commit()
+    return jsonify({"message": f"Product {product.name} deleted successfully"})

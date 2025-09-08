@@ -1,38 +1,34 @@
 from flask import Flask, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
-from flask_migrate import Migrate
+from .config import Config
 
-# Initialize extensions
 db = SQLAlchemy()
-migrate = Migrate()
 
 def create_app():
     """Factory function to create and configure the Flask app"""
     app = Flask(__name__)
-    app.config.from_object("config.Config")
+    app.config.from_object(Config)  # Use centralized config
 
-    # Initialize database and migrations
     db.init_app(app)
-    migrate.init_app(app, db)
 
-    # Import models so that Flask-Migrate knows them
-    from app import models
+    with app.app_context():
+        # Import models and create tables if database doesn't exist
+        from app import models
+        db.create_all()
+        print("Database and tables created!")
 
-    # Register blueprints (modular routes)
-    from app.routes.auth import auth_bp
-    from app.routes.products import products_bp
-    from app.routes.subscriptions import subscriptions_bp
-    from app.routes.payments import payments_bp
-    from app.routes.dashboard import dashboard_bp
+        # Import blueprints after database creation
+        from app.routes.auth import auth_bp
+        from app.routes.dashboard import dashboard_bp
+        from app.routes.products import products_bp
 
-    app.register_blueprint(auth_bp, url_prefix="/auth")
-    app.register_blueprint(products_bp, url_prefix="/products")
-    app.register_blueprint(subscriptions_bp, url_prefix="/subscriptions")
-    app.register_blueprint(payments_bp, url_prefix="/payments")
-    app.register_blueprint(dashboard_bp, url_prefix="/dashboard")
+        app.register_blueprint(auth_bp)
+        app.register_blueprint(dashboard_bp)
+        app.register_blueprint(products_bp)
 
-    @app.route("/")
-    def home():
-        return redirect(url_for("products.products_page"))
-    
+        # Root route redirects to products page
+        @app.route("/")
+        def home():
+            return redirect(url_for("products.products_page"))
+
     return app

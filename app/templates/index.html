@@ -1,19 +1,49 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>Available Products</h1>
+<a href="{{ url_for('products.add_product') }}">Add New Product</a>
 <ul id="product-list"></ul>
 
 <script>
   // Fetch products from Flask backend
-  fetch("/products/")
+  function loadProducts() {
+    fetch("/products/all")
+      .then(response => response.json())
+      .then(data => {
+        const list = document.getElementById("product-list");
+        list.innerHTML = ""; // Clear list before adding
+        data.forEach(product => {
+          const li = document.createElement("li");
+
+          // Product info
+          let html = `<strong>${product.name}</strong> - $${product.price}<br>`;
+          if (product.description) {
+            html += `${product.description}<br>`;
+          }
+          if (product.image_url) {
+            html += `<img src="${product.image_url}" alt="${product.name}" width="50"><br>`;
+          }
+
+          // Delete button
+          html += `<button onclick="deleteProduct(${product.id})">Delete</button>`;
+
+          li.innerHTML = html;
+          list.appendChild(li);
+        });
+      });
+  }
+
+  // Delete a product by ID
+  function deleteProduct(productId) {
+  fetch(`/products/delete/${productId}`, { method: "POST" }) // usar POST
     .then(response => response.json())
     .then(data => {
-      const list = document.getElementById("product-list");
-      data.forEach(product => {
-        const li = document.createElement("li");
-        li.textContent = product.name + " - $" + product.price;
-        list.appendChild(li);
-      });
+      alert(data.message);
+      loadProducts(); // refresh
     });
+  }
+
+  // Load products on page load
+  loadProducts();
 </script>
 {% endblock %}
