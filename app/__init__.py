@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 
@@ -21,14 +21,18 @@ def create_app():
     # Register blueprints (modular routes)
     from app.routes.auth import auth_bp
     from app.routes.products import products_bp
-    from app.routes.subscriptions import subs_bp
+    from app.routes.subscriptions import subscriptions_bp
     from app.routes.payments import payments_bp
     from app.routes.dashboard import dashboard_bp
 
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(products_bp, url_prefix="/products")
-    app.register_blueprint(subs_bp, url_prefix="/subscriptions")
+    app.register_blueprint(subscriptions_bp, url_prefix="/subscriptions")
     app.register_blueprint(payments_bp, url_prefix="/payments")
     app.register_blueprint(dashboard_bp, url_prefix="/dashboard")
 
+    @app.route("/")
+    def home():
+        return redirect(url_for("products.products_page"))
+    
     return app
