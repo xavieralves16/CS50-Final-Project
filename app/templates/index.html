@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Available Products</h1>
+<ul id="product-list"></ul>
+
+<script>
+  // Fetch products from Flask backend
+  fetch("/products/")
+    .then(response => response.json())
+    .then(data => {
+      const list = document.getElementById("product-list");
+      data.forEach(product => {
+        const li = document.createElement("li");
+        li.textContent = product.name + " - $" + product.price;
+        list.appendChild(li);
+      });
+    });
+</script>
+{% endblock %}
