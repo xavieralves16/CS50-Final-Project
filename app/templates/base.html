@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title if title else "E-Commerce App" }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+  <nav>
+    <a href="{{ url_for('products_page') }}">Products</a> |
+    <a href="{{ url_for('login_page') }}">Login</a> |
+    <a href="{{ url_for('register_page') }}">Register</a> |
+    <a href="{{ url_for('dashboard_page') }}">Dashboard</a>
+  </nav>
+  <hr>
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
