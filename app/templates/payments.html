@@ -1,0 +1,24 @@
+{% block content %}
+<h1>Payments</h1>
+<ul id="payments-list"></ul>
+
+<script>
+  // Fetch payments from Flask backend
+  fetch("/payments/all")
+    .then(response => response.json())
+    .then(data => {
+      const list = document.getElementById("payments-list");
+      if (data.length === 0) {
+        list.innerHTML = "<li>No payments found.</li>";
+      } else {
+        data.forEach(pay => {
+          const li = document.createElement("li");
+          li.textContent = 
+            `Payment #${pay.id} → User: ${pay.user_id}, Amount: $${pay.amount}, Status: ${pay.status}`;
+          list.appendChild(li);
+        });
+      }
+    })
+    .catch(err => console.error("Error loading payments:", err));
+</script>
+{% endblock %}
