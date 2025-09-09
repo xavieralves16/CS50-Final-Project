@@ -17,7 +17,7 @@ class Product(db.Model):
     name = db.Column(db.String(120), nullable=False)
     price = db.Column(db.Float, nullable=False)
     description = db.Column(db.Text, nullable=True)
-    image_url = db.Column(db.String(255), nullable=True) 
+    image_path = db.Column(db.String(255), nullable=True)
 
     subscriptions = db.relationship("Subscription", backref="product", lazy=True)
 

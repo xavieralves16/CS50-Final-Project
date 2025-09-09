@@ -19,13 +19,20 @@
           card.className = "product-card";
 
           // Product info
-          let html = `<h3>${product.name}</h3>
-                      <p><strong>Price:</strong> $${product.price}</p>`;
+          let html = `
+            <h3>${product.name}</h3>
+            <p><strong>Price:</strong> $${product.price}</p>
+          `;
+
           if (product.description) {
             html += `<p>${product.description}</p>`;
           }
+
           if (product.image_url) {
-            html += `<img src="${product.image_url}" alt="${product.name}">`;
+            html += `<img src="${product.image_url}" alt="${product.name}" class="product-image">`;
+          } else {
+            console.log("Imagem recebida:", product.image_url);
+            html += `<img src="https://via.placeholder.com/150" alt="placeholder" class="product-image">`;
           }
 
           // Delete button
@@ -39,7 +46,7 @@
 
   // Delete a product by ID
   function deleteProduct(productId) {
-    fetch(`/products/delete/${productId}`, { method: "POST" }) // usar POST
+    fetch(`/products/delete/${productId}`, { method: "POST" })
       .then(response => response.json())
       .then(data => {
         alert(data.message);
@@ -51,5 +58,6 @@
   loadProducts();
 </script>
 {% endblock %}
+
 
 
