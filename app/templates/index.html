@@ -2,7 +2,9 @@
 {% block content %}
 <h1>Available Products</h1>
 <a href="{{ url_for('products.add_product') }}">Add New Product</a>
-<ul id="product-list"></ul>
+
+<!-- Product container -->
+<div id="product-list"></div>
 
 <script>
   // Fetch products from Flask backend
@@ -11,39 +13,43 @@
       .then(response => response.json())
       .then(data => {
         const list = document.getElementById("product-list");
-        list.innerHTML = ""; // Clear list before adding
+        list.innerHTML = ""; // Clear before adding
         data.forEach(product => {
-          const li = document.createElement("li");
+          const card = document.createElement("div");
+          card.className = "product-card";
 
           // Product info
-          let html = `<strong>${product.name}</strong> - $${product.price}<br>`;
+          let html = `<h3>${product.name}</h3>
+                      <p><strong>Price:</strong> $${product.price}</p>`;
           if (product.description) {
-            html += `${product.description}<br>`;
+            html += `<p>${product.description}</p>`;
           }
           if (product.image_url) {
-            html += `<img src="${product.image_url}" alt="${product.name}" width="50"><br>`;
+            html += `<img src="${product.image_url}" alt="${product.name}">`;
           }
 
           // Delete button
           html += `<button onclick="deleteProduct(${product.id})">Delete</button>`;
 
-          li.innerHTML = html;
-          list.appendChild(li);
+          card.innerHTML = html;
+          list.appendChild(card);
         });
       });
   }
 
   // Delete a product by ID
   function deleteProduct(productId) {
-  fetch(`/products/delete/${productId}`, { method: "POST" }) // usar POST
-    .then(response => response.json())
-    .then(data => {
-      alert(data.message);
-      loadProducts(); // refresh
-    });
+    fetch(`/products/delete/${productId}`, { method: "POST" }) // usar POST
+      .then(response => response.json())
+      .then(data => {
+        alert(data.message);
+        loadProducts(); // refresh
+      });
   }
 
   // Load products on page load
   loadProducts();
 </script>
 {% endblock %}
+
+
