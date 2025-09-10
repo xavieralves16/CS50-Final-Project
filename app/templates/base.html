@@ -14,7 +14,7 @@
 
     <div class="nav-right">
       {% if session.get("user") %}
-        <span>Hello, {{ session["user"]["name"] }}</span>
+        <span>Hello, {{ session["user"]["name"] }}</span>\
         <a href="{{ url_for('auth.logout') }}">Logout</a>
       {% else %}
         <a href="{{ url_for('auth.login_page') }}">Login</a>
@@ -26,6 +26,5 @@
   <main>
     {% block content %}{% endblock %}
   </main>
-  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>
