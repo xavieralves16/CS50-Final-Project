@@ -28,7 +28,16 @@ document.getElementById("register-form").addEventListener("submit", async functi
   });
 
   const result = await response.json();
-  alert(result.message || result.error);
+
+  if (response.ok) {
+    // ✅ Registration success → redirect to login page
+    alert(result.message || "Registration successful!");
+    window.location.href = "/auth/login";
+  } else {
+    // ❌ Show error if backend responded with an error
+    alert(result.error || "Registration failed.");
+  }
 });
 </script>
 {% endblock %}
+
