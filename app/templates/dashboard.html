@@ -1,18 +1,36 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>Dashboard</h1>
-<ul id="stats"></ul>
+<div id="dashboard-content"></div>
 
 <script>
-fetch("/dashboard/")
+fetch("/dashboard/data")
   .then(r => r.json())
   .then(data => {
-    const list = document.getElementById("stats");
-    Object.entries(data).forEach(([key, value]) => {
-      const li = document.createElement("li");
-      li.textContent = key + ": " + value;
-      list.appendChild(li);
-    });
+    const container = document.getElementById("dashboard-content");
+
+    if (data.error === "not_logged_in") {
+      container.textContent = "To access dashboard login first";
+      return;
+    }
+
+    if (data.subscriptions && data.subscriptions.length === 0) {
+      container.textContent = "No subscriptions yet";
+      return;
+    }
+
+    if (data.subscriptions) {
+      const list = document.createElement("ul");
+      data.subscriptions.forEach(sub => {
+        const li = document.createElement("li");
+        li.textContent = `${sub.product} | Status: ${sub.status} | Started: ${sub.start_date}`;
+        list.appendChild(li);
+      });
+      container.appendChild(list);
+    }
+  })
+  .catch(() => {
+    document.getElementById("dashboard-content").textContent = "Error loading dashboard.";
   });
 </script>
 {% endblock %}

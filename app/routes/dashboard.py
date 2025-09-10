@@ -1,28 +1,32 @@
-from flask import Blueprint, jsonify, render_template
-from app.models import db, User, Product, Subscription
+from flask import Blueprint, jsonify, session, render_template
+from app.models import User
 
 dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/dashboard")
 
-# ------------------------
-# FRONTEND ROUTE
-# ------------------------
+# Página HTML
 @dashboard_bp.route("/", methods=["GET"])
 def dashboard_page():
-    """Render dashboard page"""
     return render_template("dashboard.html", title="Dashboard")
 
-# ------------------------
-# API ROUTE
-# ------------------------
-@dashboard_bp.route("/stats", methods=["GET"])
-def get_stats():
-    """Return statistics as JSON (used by fetch in dashboard.html)"""
-    users_count = User.query.count()
-    products_count = Product.query.count()
-    subs_count = Subscription.query.count()
+# Endpoint para fornecer dados em JSON
+@dashboard_bp.route("/data", methods=["GET"])
+def dashboard_data():
+    if "user" not in session:
+        return jsonify({"error": "not_logged_in"}), 401
 
-    return jsonify({
-        "users": users_count,
-        "products": products_count,
-        "subscriptions": subs_count
-    })
+    user_id = session["user"]["id"]
+    user = User.query.get(user_id)
+
+    if not user.subscriptions or len(user.subscriptions) == 0:
+        return jsonify({"subscriptions": []}), 200
+
+    subs_data = []
+    for sub in user.subscriptions:
+        subs_data.append({
+            "product": sub.product.name,
+            "status": sub.status,
+            "start_date": sub.start_date.strftime("%Y-%m-%d"),
+        })
+
+    return jsonify({"subscriptions": subs_data}), 200
+
