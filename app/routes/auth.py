@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, render_template, redirect, url_for
+from flask import Blueprint, request, jsonify, render_template, redirect, url_for, session
 from app.models import db, User
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
@@ -25,9 +25,18 @@ def login():
     data = request.get_json()
     user = User.query.filter_by(email=data["email"]).first()
 
-    if user and user.password == data["password"]:  # ⚠️ no hashing yet!
+    if user and user.password == data["password"]:  # ⚠️ sem hashing por enquanto
+        # guardar utilizador na sessão
+        session["user"] = {"id": user.id, "name": user.username, "email": user.email}
         return jsonify({"message": "Login successful!"}), 200
+    
     return jsonify({"error": "Invalid credentials"}), 401
+
+@auth_bp.route("/logout", methods=["GET"])
+def logout():
+    """Logout user and clear session"""
+    session.pop("user", None)
+    return redirect(url_for("auth.login_page"))
 
 @auth_bp.route("/register", methods=["POST"])
 def register():
@@ -39,7 +48,7 @@ def register():
     new_user = User(
         username=data["username"],
         email=data["email"],
-        password=data["password"]  # ⚠️ later: hash this
+        password=data["password"]  # ⚠️ mais tarde: fazer hashing
     )
     db.session.add(new_user)
     db.session.commit()

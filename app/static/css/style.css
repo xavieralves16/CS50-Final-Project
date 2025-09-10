@@ -21,10 +21,17 @@ nav {
     background-color: #343a40;
     padding: 15px 30px;
     display: flex;
-    gap: 15px;
+    justify-content: space-between; 
+    align-items: center;
 }
 
-nav a {
+.nav-left, .nav-right {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+nav a, nav span {
     color: #f8f9fa;
     text-decoration: none;
     font-weight: 500;
