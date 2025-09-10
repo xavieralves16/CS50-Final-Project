@@ -1,124 +1,83 @@
-# app/routes/products.py
-from flask import (
-    Blueprint, request, jsonify, render_template,
-    url_for, redirect, current_app
-)
-from werkzeug.utils import secure_filename
+from flask import Blueprint, request, jsonify, render_template, redirect, url_for, session, flash
 from app.models import db, Product
 import os
+from werkzeug.utils import secure_filename
 
 products_bp = Blueprint("products", __name__, url_prefix="/products")
 
-# Allowed image extensions for uploads
-ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
-
-def allowed_file(filename: str) -> bool:
-    """Return True if filename has an allowed extension."""
-    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
 # ------------------------
-# FRONTEND ROUTE
+# FRONTEND ROUTES
 # ------------------------
 @products_bp.route("/", methods=["GET"])
 def products_page():
-    """Render product list page (frontend bootstraps with JS)."""
-    return render_template("index.html", title="Products")
+    """Render index page with products list"""
+    return render_template(
+        "index.html",
+        title="Products",
+        is_admin=session.get("user", {}).get("is_admin", False)  # <-- flag para Jinja/JS
+    )
 
+@products_bp.route("/add", methods=["GET", "POST"])
+def add_product():
+    """Page + form handler to add a new product (only for admins)"""
+    if not session.get("user") or not session["user"].get("is_admin"):
+        flash("Unauthorized access – only admins can add products.", "error")
+        return redirect(url_for("products.products_page"))
+
+    if request.method == "POST":
+        name = request.form["name"]
+        price = request.form["price"]
+        description = request.form.get("description")
+        image_file = request.files.get("image")
+
+        image_path = None
+        if image_file:
+            filename = secure_filename(image_file.filename)
+            upload_folder = os.path.join("app", "static", "uploads")
+            os.makedirs(upload_folder, exist_ok=True)
+            file_path = os.path.join(upload_folder, filename)
+            image_file.save(file_path)
+            image_path = f"/static/uploads/{filename}"
+
+        new_product = Product(
+            name=name,
+            price=price,
+            description=description,
+            image_path=image_path
+        )
+        db.session.add(new_product)
+        db.session.commit()
+        flash("Product added successfully!", "success")
+        return redirect(url_for("products.products_page"))
+
+    return render_template("add_product.html", title="Add Product")
 
 # ------------------------
 # API ROUTES
 # ------------------------
 @products_bp.route("/all", methods=["GET"])
-def get_products():
-    """
-    Return all products as JSON (used by fetch in index.html).
-    We convert image_path (stored in DB) into a public URL under /static using url_for.
-    """
+def get_all_products():
+    """Return all products as JSON"""
     products = Product.query.all()
-    payload = []
+    data = []
     for p in products:
-        image_url = url_for("static", filename=p.image_path) if getattr(p, "image_path", None) else None
-        payload.append({
+        data.append({
             "id": p.id,
             "name": p.name,
             "price": p.price,
             "description": p.description,
-            "image_url": image_url,  # frontend expects image_url
+            "image_url": p.image_path
         })
-    return jsonify(payload)
-
-
-@products_bp.route("/add", methods=["GET", "POST"])
-def add_product():
-    """
-    Create a new product.
-    - GET: render the HTML form
-    - POST (multipart): read fields + optional image file; save file to UPLOAD_FOLDER; store relative path in DB.
-    """
-    if request.method == "POST":
-        # Read basic fields
-        name = (request.form.get("name") or "").strip()
-        description = (request.form.get("description") or "").strip()
-        price_raw = request.form.get("price") or "0"
-        try:
-            price = float(price_raw)
-        except ValueError:
-            price = 0.0
-
-        # Handle optional image upload
-        image_path = None
-        file = request.files.get("image")  # <input type="file" name="image">
-        if file and file.filename:
-            if not allowed_file(file.filename):
-                # 400 - bad request with a json error (can be improved to show in template)
-                return jsonify({"message": "Invalid image type. Allowed: png, jpg, jpeg, gif, webp"}), 400
-            filename = secure_filename(file.filename)
-            # Build full path under the configured UPLOAD_FOLDER (set in app/__init__.py)
-            save_dir = current_app.config["UPLOAD_FOLDER"]  # e.g., app/static/uploads
-            os.makedirs(save_dir, exist_ok=True)
-            save_path = os.path.join(save_dir, filename)
-            file.save(save_path)
-            # Store a path relative to /static so we can expose it via url_for('static', filename=...)
-            image_path = f"uploads/{filename}"
-
-        # Create product row
-        new_product = Product(
-            name=name,
-            description=description,
-            price=price,
-            image_path=image_path  # path relative to /static
-        )
-        db.session.add(new_product)
-        db.session.commit()
-
-        # After creating, go back to the products page
-        return redirect(url_for("products.products_page"))
-
-    # GET → show the form page
-    return render_template("add_product.html", title="Add Product")
-
+    return jsonify(data)
 
 @products_bp.route("/delete/<int:product_id>", methods=["POST"])
 def delete_product(product_id):
-    """
-    Delete a product by ID.
-    If the product has an uploaded image, remove it from disk as well (best effort).
-    Returns JSON so the frontend can refresh the list without a full reload.
-    """
+    """Delete a product (only for admins)"""
+    if not session.get("user") or not session["user"].get("is_admin"):
+        return jsonify({"error": "Unauthorized"}), 403
+
     product = Product.query.get_or_404(product_id)
-
-    # Attempt to remove the file from disk if present
-    if getattr(product, "image_path", None):
-        # Build absolute path from app root: app/static/<image_path>
-        file_path = os.path.join(current_app.root_path, "static", product.image_path)
-        if os.path.exists(file_path):
-            try:
-                os.remove(file_path)
-            except OSError:
-                # Silent fail (you could log this)
-                pass
-
     db.session.delete(product)
     db.session.commit()
-    return jsonify({"message": f"Product '{product.name}' deleted successfully"})
+    return jsonify({"message": f"Product '{product.name}' deleted successfully!"})
+

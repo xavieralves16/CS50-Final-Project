@@ -1,12 +1,20 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>Available Products</h1>
-<a href="{{ url_for('products.add_product') }}">Add New Product</a>
+
+{% if is_admin %}
+  <a href="{{ url_for('products.add_product') }}">Add New Product</a>
+{% endif %}
 
 <!-- Product container -->
-<div id="product-list"></div>
+<div id="product-list" data-is-admin="{{ is_admin | tojson }}"></div>
 
 <script>
+  // Flag vinda do Flask (sem erros no VS Code)
+  const IS_ADMIN = JSON.parse(
+    document.getElementById("product-list").dataset.isAdmin
+  );
+
   // Fetch products from Flask backend
   function loadProducts() {
     fetch("/products/all")
@@ -14,6 +22,7 @@
       .then(data => {
         const list = document.getElementById("product-list");
         list.innerHTML = ""; // Clear before adding
+
         data.forEach(product => {
           const card = document.createElement("div");
           card.className = "product-card";
@@ -31,12 +40,13 @@
           if (product.image_url) {
             html += `<img src="${product.image_url}" alt="${product.name}" class="product-image">`;
           } else {
-            console.log("Imagem recebida:", product.image_url);
             html += `<img src="https://via.placeholder.com/150" alt="placeholder" class="product-image">`;
           }
 
-          // Delete button
-          html += `<button onclick="deleteProduct(${product.id})">Delete</button>`;
+          // Delete button only if admin
+          if (IS_ADMIN) {
+            html += `<button onclick="deleteProduct(${product.id})">Delete</button>`;
+          }
 
           card.innerHTML = html;
           list.appendChild(card);
@@ -49,8 +59,12 @@
     fetch(`/products/delete/${productId}`, { method: "POST" })
       .then(response => response.json())
       .then(data => {
-        alert(data.message);
-        loadProducts(); // refresh
+        if (data.error) {
+          alert(data.error);
+        } else {
+          alert(data.message);
+          loadProducts(); // refresh
+        }
       });
   }
 

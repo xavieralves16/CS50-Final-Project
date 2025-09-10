@@ -26,8 +26,13 @@ def login():
     user = User.query.filter_by(email=data["email"]).first()
 
     if user and user.password == data["password"]:  # ⚠️ sem hashing por enquanto
-        # guardar utilizador na sessão
-        session["user"] = {"id": user.id, "name": user.username, "email": user.email}
+        # guardar utilizador na sessão (inclui is_admin)
+        session["user"] = {
+            "id": user.id,
+            "name": user.username,
+            "email": user.email,
+            "is_admin": user.is_admin
+        }
         return jsonify({"message": "Login successful!"}), 200
     
     return jsonify({"error": "Invalid credentials"}), 401
@@ -48,7 +53,8 @@ def register():
     new_user = User(
         username=data["username"],
         email=data["email"],
-        password=data["password"]  # ⚠️ mais tarde: fazer hashing
+        password=data["password"],  # ⚠️ mais tarde: fazer hashing
+        is_admin=False              # nunca cria admins via formulário
     )
     db.session.add(new_user)
     db.session.commit()

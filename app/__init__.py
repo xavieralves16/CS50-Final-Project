@@ -25,8 +25,21 @@ def create_app():
     with app.app_context():
         # Import models and create tables if database doesn't exist
         from app import models
+        from app.models import User   # <-- import User model here
         db.create_all()
         print("Database and tables created!")
+
+        # ✅ Ensure default admin exists
+        if not User.query.filter_by(email="admin@example.com").first():
+            admin = User(
+                username="admin",
+                email="admin@example.com",
+                password="1234",   # ⚠️ TODO: add password hashing later
+                is_admin=True
+            )
+            db.session.add(admin)
+            db.session.commit()
+            print("Default admin user created (email=admin@example.com, password=1234)")
 
         # Import blueprints after database creation
         from app.routes.auth import auth_bp
