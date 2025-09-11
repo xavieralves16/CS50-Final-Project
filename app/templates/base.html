@@ -13,6 +13,7 @@
     </div>
 
     <div class="nav-right">
+      <a href="{{ url_for('cart.view_cart') }}">Cart ({{ session.get('cart', {})|length }})</a>
       {% if session.get("user") %}
         <span>Hello, {{ session["user"]["name"] }}</span>\
         <a href="{{ url_for('auth.logout') }}">Logout</a>

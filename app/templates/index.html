@@ -47,7 +47,7 @@
           if (IS_ADMIN) {
             html += `<button onclick="deleteProduct(${product.id})">Delete</button>`;
           }
-
+          html += `<button onclick="addToCart(${product.id})">Add to Cart</button>`;
           card.innerHTML = html;
           list.appendChild(card);
         });
@@ -68,6 +68,13 @@
       });
   }
 
+  // Add product to cart
+  function addToCart(productId) {
+    fetch(`/cart/add/${productId}`, { method: "POST" })
+      .then(res => res.json())
+      .then(data => { alert(data.message); });
+  }
+  
   // Load products on page load
   loadProducts();
 </script>

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Your Cart</h1>
+{% if items %}
+<table>
+  <thead>
+    <tr><th>Product</th><th>Price</th><th>Quantity</th><th>Subtotal</th><th>Action</th></tr>
+  </thead>
+  <tbody>
+  {% for item in items %}
+    <tr>
+      <td>{{ item.name }}</td>
+      <td>${{ '%.2f'|format(item.price) }}</td>
+      <td>{{ item.quantity }}</td>
+      <td>${{ '%.2f'|format(item.subtotal) }}</td>
+      <td><button onclick="removeFromCart('{{ item.id }}')">Remove</button></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+<p><strong>Total: ${{ '%.2f'|format(total) }}</strong></p>
+<button onclick="clearCart()">Clear Cart</button>
+{% else %}
+<p>Your cart is empty.</p>
+{% endif %}
+<script>
+function removeFromCart(productId){
+  fetch(`/cart/remove/${productId}`, {method: 'POST'})
+    .then(res => res.json())
+    .then(data => { location.reload(); });
+}
+function clearCart(){
+  fetch('/cart/clear', {method: 'POST'})
+    .then(res => res.json())
+    .then(data => { location.reload(); });
+}
+</script>
+{% endblock %}
