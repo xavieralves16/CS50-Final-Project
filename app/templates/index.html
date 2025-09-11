@@ -70,11 +70,18 @@
 
   // Add product to cart
   function addToCart(productId) {
-    fetch(`/cart/add/${productId}`, { method: "POST" })
+    fetch(`/cart/add/${productId}`, { method: 'POST' })
       .then(res => res.json())
-      .then(data => { alert(data.message); });
+      .then(data => {
+        let totalItems = 0;
+        for (const qty of Object.values(data.cart)) {
+          totalItems += qty;
+        }
+        document.getElementById('cart-count').textContent = totalItems;
+      })
+      .catch(error => console.error('Error adding to cart:', error));
   }
-  
+
   // Load products on page load
   loadProducts();
 </script>
