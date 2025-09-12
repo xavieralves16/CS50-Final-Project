@@ -1,4 +1,4 @@
-from flask import Blueprint, session, render_template, jsonify
+from flask import Blueprint, session, render_template, jsonify, redirect, url_for, flash
 from app.models import Product
 
 cart_bp = Blueprint("cart", __name__, url_prefix="/cart")
@@ -45,3 +45,11 @@ def remove_from_cart(product_id):
 def clear_cart():
     session["cart"] = {}
     return jsonify({"message": "Cart cleared"})
+
+@cart_bp.route("/checkout", methods=["GET"])
+def checkout():
+    if not session.get("user"):
+        flash("You need to log in to proceed to checkout.", "warning")
+        return redirect(url_for("auth.login_page"))
+
+    return redirect(url_for("payments.payments_page"))

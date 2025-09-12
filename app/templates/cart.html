@@ -20,6 +20,7 @@
 </table>
 <p><strong>Total: ${{ '%.2f'|format(total) }}</strong></p>
 <button onclick="clearCart()">Clear Cart</button>
+<a href="{{ url_for('cart.checkout') }}"><button>Checkout</button></a>
 {% else %}
 <p>Your cart is empty.</p>
 {% endif %}

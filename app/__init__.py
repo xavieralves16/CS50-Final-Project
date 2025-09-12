@@ -46,11 +46,13 @@ def create_app():
         from app.routes.dashboard import dashboard_bp
         from app.routes.products import products_bp
         from app.routes.cart import cart_bp
+        from app.routes.payments import payments_bp
 
         app.register_blueprint(auth_bp)
         app.register_blueprint(dashboard_bp)
         app.register_blueprint(products_bp)
         app.register_blueprint(cart_bp)
+        app.register_blueprint(payments_bp)
 
         # Root route redirects to products page
         @app.route("/")

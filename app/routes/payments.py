@@ -20,8 +20,9 @@ def get_payments():
     payments = Payment.query.all()
     return jsonify([{
         "id": p.id,
-        "user_id": p.user_id,
+        "user_id": p.subscription.user_id,
+        "subscription_id": p.subscription_id,
         "amount": p.amount,
         "status": p.status,
-        "created_at": p.created_at.isoformat()
+        "timestamp": p.timestamp.isoformat()
     } for p in payments])
