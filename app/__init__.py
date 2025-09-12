@@ -1,7 +1,13 @@
+import os
+from dotenv import load_dotenv
+
+
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
+
 from flask import Flask, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from .config import Config
-import os
+
 
 db = SQLAlchemy()
 
@@ -9,6 +15,10 @@ def create_app():
     """Factory function to create and configure the Flask app"""
     app = Flask(__name__)
     app.config.from_object(Config)  # Use centralized config
+
+    # DEBUG
+    print("DEBUG - STRIPE_PUBLIC_KEY carregado no Flask:",
+          app.config.get("STRIPE_PUBLIC_KEY"))
 
     # --------------------------
     # Upload folder configuration

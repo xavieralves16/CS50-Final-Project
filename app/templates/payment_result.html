@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 style="color: {% if status == 'success' %}green{% else %}red{% endif %};">
+  {{ message }}
+</h1>
+
+<p>
+  {% if status == 'success' %}
+    Your order has been processed successfully.
+  {% else %}
+    The payment was canceled or failed. Please try again.
+  {% endif %}
+</p>
+
+<a href="{{ url_for('products.products_page') }}">
+  <button>Return to Main Page</button>
+</a>
+
+<style>
+button {
+  padding: 10px 20px;
+  background-color: #007BFF;
+  border: none;
+  color: white;
+  cursor: pointer;
+}
+button:hover {
+  background-color: #0056b3;
+}
+</style>
+{% endblock %}

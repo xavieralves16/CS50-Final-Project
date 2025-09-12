@@ -1,24 +1,41 @@
+{% extends "base.html" %}
 {% block content %}
-<h1>Payments</h1>
-<ul id="payments-list"></ul>
+<h1>Checkout</h1>
 
-<script>
-  // Fetch payments from Flask backend
-  fetch("/payments/all")
-    .then(response => response.json())
-    .then(data => {
-      const list = document.getElementById("payments-list");
-      if (data.length === 0) {
-        list.innerHTML = "<li>No payments found.</li>";
-      } else {
-        data.forEach(pay => {
-          const li = document.createElement("li");
-          li.textContent = 
-            `Payment #${pay.id} → User: ${pay.user_id}, Amount: $${pay.amount}, Status: ${pay.status}`;
-          list.appendChild(li);
-        });
-      }
-    })
-    .catch(err => console.error("Error loading payments:", err));
-</script>
+{% if items and items|length > 0 %}
+  <h2>Order Summary</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th>Price</th>
+        <th>Qty</th>
+        <th>Subtotal</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in items %}
+      <tr>
+        <td>{{ it.name }}</td>
+        <td>${{ "%.2f"|format(it.price) }}</td>
+        <td>{{ it.quantity }}</td>
+        <td>${{ "%.2f"|format(it.subtotal) }}</td>
+      </tr>
+      {% endfor %}
+      <tr>
+        <td colspan="3" style="text-align:right;font-weight:bold;">Total</td>
+        <td style="font-weight:bold;">${{ "%.2f"|format(total) }}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <form action="{{ url_for('payments.create_checkout_session') }}" method="POST">
+    <button type="submit" style="margin-top:20px;padding:10px 20px;background:#635BFF;color:white;border:none;border-radius:5px;cursor:pointer;">
+      Pay ${{ "%.2f"|format(total) }}
+    </button>
+  </form>
+
+{% else %}
+  <p>Your cart is empty. <a href="{{ url_for('products.products_page') }}">Go back to shop</a>.</p>
+{% endif %}
 {% endblock %}

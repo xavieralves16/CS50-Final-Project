@@ -1,28 +1,95 @@
-from flask import Blueprint, request, jsonify, render_template
-from app.models import db, Payment
+import stripe
+from flask import Blueprint, render_template, session, current_app, url_for, redirect
+from app.models import Product
 
 payments_bp = Blueprint("payments", __name__, url_prefix="/payments")
 
-# ------------------------
-# FRONTEND ROUTE
-# ------------------------
+
+def compute_cart_total_and_items():
+    """Calcula o total e os itens do carrinho."""
+    cart = session.get("cart", {})
+    items = []
+    total = 0.0
+    for pid_str, qty in cart.items():
+        try:
+            pid = int(pid_str)
+        except ValueError:
+            continue
+        product = Product.query.get(pid)
+        if product:
+            subtotal = product.price * qty
+            total += subtotal
+            items.append({
+                "id": product.id,
+                "name": product.name,
+                "price": product.price,
+                "quantity": qty,
+                "subtotal": subtotal
+            })
+    return round(total, 2), items
+
+
 @payments_bp.route("/", methods=["GET"])
 def payments_page():
-    """Render payments page"""
-    return render_template("payments.html", title="Payments")
+    """Página inicial do checkout"""
+    total, items = compute_cart_total_and_items()
+    if total <= 0:
+        return redirect(url_for("cart.view_cart"))
 
-# ------------------------
-# API ROUTES
-# ------------------------
-@payments_bp.route("/all", methods=["GET"])
-def get_payments():
-    """Return all payments as JSON"""
-    payments = Payment.query.all()
-    return jsonify([{
-        "id": p.id,
-        "user_id": p.subscription.user_id,
-        "subscription_id": p.subscription_id,
-        "amount": p.amount,
-        "status": p.status,
-        "timestamp": p.timestamp.isoformat()
-    } for p in payments])
+    return render_template(
+        "payments.html",
+        title="Checkout",
+        total=total,
+        items=items,
+        stripe_public_key=current_app.config["STRIPE_PUBLIC_KEY"]
+    )
+
+
+@payments_bp.route("/create-checkout-session", methods=["POST"])
+def create_checkout_session():
+    """Cria sessão de pagamento segura no Stripe."""
+    stripe.api_key = current_app.config["STRIPE_SECRET_KEY"]
+
+    total, items = compute_cart_total_and_items()
+    if total <= 0:
+        return redirect(url_for("cart.view_cart"))
+
+    # Converte total para cêntimos (Stripe trabalha em centavos)
+    amount_cents = int(total * 100)
+
+    # Cria uma sessão no Stripe
+    checkout_session = stripe.checkout.Session.create(
+        payment_method_types=["card"],
+        line_items=[{
+            "price_data": {
+                "currency": "usd",
+                "product_data": {
+                    "name": "Cart Purchase",
+                },
+                "unit_amount": amount_cents,
+            },
+            "quantity": 1,
+        }],
+        mode="payment",
+        success_url=url_for("payments.success", _external=True),
+        cancel_url=url_for("payments.cancel", _external=True),
+    )
+
+    return redirect(checkout_session.url, code=303)
+
+
+@payments_bp.route("/success")
+def success():
+    """Página após pagamento bem-sucedido"""
+    session["cart"] = {}  # limpa o carrinho
+    return render_template("payment_result.html",
+                           message="Payment Successful!",
+                           status="success")
+
+
+@payments_bp.route("/cancel")
+def cancel():
+    """Página após cancelamento do pagamento"""
+    return render_template("payment_result.html",
+                           message="Payment Canceled!",
+                           status="failed")
