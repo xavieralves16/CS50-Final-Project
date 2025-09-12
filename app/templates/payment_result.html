@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
-<h1 style="color: {% if status == 'success' %}green{% else %}red{% endif %};">
+
+<h1 class="{{ 'status-success' if status == 'success' else 'status-failed' }}">
   {{ message }}
 </h1>
 
@@ -17,6 +18,9 @@
 </a>
 
 <style>
+.status-success { color: green; }
+.status-failed  { color: red;   }
+
 button {
   padding: 10px 20px;
   background-color: #007BFF;
@@ -24,8 +28,8 @@ button {
   color: white;
   cursor: pointer;
 }
-button:hover {
-  background-color: #0056b3;
-}
+button:hover { background-color: #0056b3; }
 </style>
+
 {% endblock %}
+

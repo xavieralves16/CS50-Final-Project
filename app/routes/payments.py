@@ -80,16 +80,15 @@ def create_checkout_session():
 
 @payments_bp.route("/success")
 def success():
-    """Página após pagamento bem-sucedido"""
-    session["cart"] = {}  # limpa o carrinho
+    session["cart"] = {}
     return render_template("payment_result.html",
                            message="Payment Successful!",
-                           status="success")
-
+                           status="success",
+                           color="green")
 
 @payments_bp.route("/cancel")
 def cancel():
-    """Página após cancelamento do pagamento"""
     return render_template("payment_result.html",
                            message="Payment Canceled!",
-                           status="failed")
+                           status="failed",
+                           color="red")
