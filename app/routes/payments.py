@@ -1,6 +1,6 @@
 import stripe
 from flask import Blueprint, render_template, session, current_app, url_for, redirect
-from app.models import Product
+from app.models import Product, Subscription, Payment, db
 
 payments_bp = Blueprint("payments", __name__, url_prefix="/payments")
 
@@ -80,6 +80,33 @@ def create_checkout_session():
 
 @payments_bp.route("/success")
 def success():
+    """Handle successful payment and create subscriptions/payments."""
+    cart = session.get("cart", {})
+    user_data = session.get("user")
+
+    if user_data:
+        user_id = user_data["id"]
+        # For each item in the cart create a subscription and payment record
+        for pid_str, qty in cart.items():
+            try:
+                pid = int(pid_str)
+            except ValueError:
+                continue
+
+            product = Product.query.get(pid)
+            if not product:
+                continue
+
+            subscription = Subscription(user_id=user_id, product_id=product.id, status="active")
+            db.session.add(subscription)
+            db.session.flush()  # ensure subscription.id is available
+
+            payment = Payment(subscription_id=subscription.id,
+                              amount=product.price * qty,
+                              status="success")
+            db.session.add(payment)
+
+        db.session.commit()
     session["cart"] = {}
     return render_template("payment_result.html",
                            message="Payment Successful!",

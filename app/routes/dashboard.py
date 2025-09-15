@@ -23,6 +23,7 @@ def dashboard_data():
     subs_data = []
     for sub in user.subscriptions:
         subs_data.append({
+            "id" : sub.id,
             "product": sub.product.name,
             "status": sub.status,
             "start_date": sub.start_date.strftime("%Y-%m-%d"),

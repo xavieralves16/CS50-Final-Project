@@ -14,8 +14,8 @@
       } else {
         data.forEach(sub => {
           const li = document.createElement("li");
-          li.textContent = 
-            `Subscription #${sub.id} → User: ${sub.user_id}, Product: ${sub.product_id}, Active: ${sub.active}`;
+          li.textContent =
+            `Subscription #${sub.id} → User: ${sub.user_id}, Product: ${sub.product_id}, Status: ${sub.status}`;
           list.appendChild(li);
         });
       }

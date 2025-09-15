@@ -24,6 +24,17 @@ fetch("/dashboard/data")
       data.subscriptions.forEach(sub => {
         const li = document.createElement("li");
         li.textContent = `${sub.product} | Status: ${sub.status} | Started: ${sub.start_date}`;
+
+        if (sub.status === "active") {
+          const btn = document.createElement("button");
+          btn.textContent = "Cancel";
+          btn.onclick = () => {
+            fetch(`/subscriptions/${sub.id}/cancel`, { method: "POST" })
+              .then(() => location.reload());
+          };
+          li.appendChild(btn);
+        }
+
         list.appendChild(li);
       });
       container.appendChild(list);
