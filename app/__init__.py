@@ -1,9 +1,4 @@
 import os
-from dotenv import load_dotenv
-
-
-load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
-
 from flask import Flask, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from .config import Config
@@ -15,10 +10,6 @@ def create_app():
     """Factory function to create and configure the Flask app"""
     app = Flask(__name__)
     app.config.from_object(Config)  # Use centralized config
-
-    # DEBUG
-    print("DEBUG - STRIPE_PUBLIC_KEY carregado no Flask:",
-          app.config.get("STRIPE_PUBLIC_KEY"))
 
     # --------------------------
     # Upload folder configuration
@@ -37,7 +28,6 @@ def create_app():
         from app import models
         from app.models import User   # <-- import User model here
         db.create_all()
-        print("Database and tables created!")
 
         # ✅ Ensure default admin exists
         if not User.query.filter_by(email="admin@example.com").first():
@@ -49,7 +39,6 @@ def create_app():
             )
             db.session.add(admin)
             db.session.commit()
-            print("Default admin user created (email=admin@example.com, password=1234)")
 
         # Import blueprints after database creation
         from app.routes.auth import auth_bp
