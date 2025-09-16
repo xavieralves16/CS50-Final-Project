@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, render_template, redirect, url_for, session
 from app.models import db, User
+from werkzeug.security import check_password_hash, generate_password_hash
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
@@ -25,8 +26,15 @@ def login():
     data = request.get_json()
     user = User.query.filter_by(email=data["email"]).first()
 
-    if user and user.password == data["password"]:  # ⚠️ sem hashing por enquanto
-        # guardar utilizador na sessão (inclui is_admin)
+    password_valid = False
+    if user:
+        try:
+            password_valid = check_password_hash(user.password, data["password"])
+        except ValueError:
+            # Para suportar palavras-passe antigas sem hash
+            password_valid = user.password == data["password"]
+
+    if password_valid:
         session["user"] = {
             "id": user.id,
             "name": user.username,
@@ -53,8 +61,8 @@ def register():
     new_user = User(
         username=data["username"],
         email=data["email"],
-        password=data["password"],  # ⚠️ mais tarde: fazer hashing
-        is_admin=False              # nunca cria admins via formulário
+        password=generate_password_hash(data["password"]),
+        is_admin=False              
     )
     db.session.add(new_user)
     db.session.commit()
