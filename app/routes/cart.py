@@ -1,5 +1,5 @@
 from flask import Blueprint, session, render_template, jsonify, redirect, url_for, flash
-from app.models import Product
+from app.models import Product, Subscription
 
 cart_bp = Blueprint("cart", __name__, url_prefix="/cart")
 
@@ -26,6 +26,28 @@ def view_cart():
 def add_to_cart(product_id):
     cart = session.get("cart", {})
     pid = str(product_id)
+    if pid in cart:
+        return jsonify({"error": "Product is already in the cart.", "cart": cart}), 400
+
+    user = session.get("user")
+    if user:
+        active_subscription = Subscription.query.filter_by(
+            user_id=user["id"], product_id=product_id, status="active"
+        ).first()
+        if active_subscription:
+            return (
+                jsonify(
+                    {
+                        "error": "You are already subscribed to this product.",
+                        "cart": cart,
+                    }
+                ),
+                400,
+            )
+
+    product = Product.query.get(product_id)
+    if not product:
+        return jsonify({"error": "Product not found.", "cart": cart}), 404
     cart[pid] = cart.get(pid, 0) + 1
     session["cart"] = cart
     return jsonify({"message": "Product added to cart", "cart": cart})
