@@ -31,7 +31,6 @@ def login():
         try:
             password_valid = check_password_hash(user.password, data["password"])
         except ValueError:
-            # Para suportar palavras-passe antigas sem hash
             password_valid = user.password == data["password"]
 
     if password_valid:

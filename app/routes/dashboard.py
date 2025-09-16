@@ -3,7 +3,7 @@ from app.models import User
 
 dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/dashboard")
 
-# Página HTML
+#HTML Page
 @dashboard_bp.route("/", methods=["GET"])
 def dashboard_page():
     return render_template("dashboard.html", title="Dashboard")

@@ -54,10 +54,10 @@ def create_checkout_session():
     if total <= 0:
         return redirect(url_for("cart.view_cart"))
 
-    # Converte total para cêntimos (Stripe trabalha em centavos)
+    # Convert total to cents(Stripe works with cents)
     amount_cents = int(total * 100)
 
-    # Cria uma sessão no Stripe
+    # Create Stripe checkout session
     checkout_session = stripe.checkout.Session.create(
         payment_method_types=["card"],
         line_items=[{

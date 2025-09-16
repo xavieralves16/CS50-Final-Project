@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 
-# Carregar o .env logo no início
+# Load .env variables from a file located at the project root
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"))
 
 class Config:

@@ -14,7 +14,7 @@ def products_page():
     return render_template(
         "index.html",
         title="Products",
-        is_admin=session.get("user", {}).get("is_admin", False)  # <-- flag para Jinja/JS
+        is_admin=session.get("user", {}).get("is_admin", False)  # <-- flag for Jinja/JS
     )
 
 @products_bp.route("/add", methods=["GET", "POST"])
