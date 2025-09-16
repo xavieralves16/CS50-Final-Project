@@ -2,6 +2,7 @@ import os
 from flask import Flask, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from .config import Config
+from werkzeug.security import generate_password_hash
 
 
 db = SQLAlchemy()
@@ -29,15 +30,20 @@ def create_app():
         from app.models import User   # <-- import User model here
         db.create_all()
 
-        # ✅ Ensure default admin exists
-        if not User.query.filter_by(email="admin@example.com").first():
+         # ✅ Ensure default admin exists with a hashed password
+        admin = User.query.filter_by(email="admin@example.com").first()
+        if not admin:
             admin = User(
                 username="admin",
                 email="admin@example.com",
-                password="1234",   # ⚠️ TODO: add password hashing later
+                password=generate_password_hash("1234"),
                 is_admin=True
             )
             db.session.add(admin)
+            db.session.commit()
+        
+        elif not admin.password.startswith("pbkdf2:"):
+            admin.password = generate_password_hash("1234")
             db.session.commit()
 
         # Import blueprints after database creation
