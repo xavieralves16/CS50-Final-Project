@@ -1,47 +1,299 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Dashboard</h1>
-<div id="dashboard-content"></div>
+<section class="dashboard">
+  <div class="dashboard-header">
+    <div class="dashboard-header__content">
+      <span class="dashboard-header__eyebrow">Overview</span>
+      <h1 class="dashboard-title">Dashboard</h1>
+      <p class="dashboard-subtitle">
+        Keep track of every subscription in one place, monitor plan statuses, and take action without leaving this page.
+      </p>
+    </div>
+  </div>
 
+  <div id="dashboard-content" class="dashboard-content" data-login-url="{{ url_for('auth.login_page') }}">
+    <div class="dashboard-loading">
+      <span class="dashboard-loading__spinner" aria-hidden="true"></span>
+      <p>Loading your subscriptions...</p>
+    </div>
+  </div>
+</section>
 <script>
-fetch("/dashboard/data")
-  .then(r => r.json())
-  .then(data => {
-    const container = document.getElementById("dashboard-content");
+(() => {
+  const dashboardContent = document.getElementById("dashboard-content");
+  const loginUrl = dashboardContent.dataset.loginUrl;
 
-    if (data.error === "not_logged_in") {
-      container.textContent = "To access dashboard login first";
-      return;
+  const renderLoading = () => {
+    dashboardContent.innerHTML = `
+      <div class="dashboard-loading">
+        <span class="dashboard-loading__spinner" aria-hidden="true"></span>
+        <p>Loading your subscriptions...</p>
+      </div>
+    `;
+  };
+
+  const renderCallout = ({ variant = "empty", title, description, action }) => {
+    dashboardContent.innerHTML = "";
+
+    const wrapper = document.createElement("div");
+    wrapper.className = `dashboard-callout dashboard-callout--${variant}`;
+
+    if (title) {
+      const heading = document.createElement("h3");
+      heading.textContent = title;
+      wrapper.appendChild(heading);
     }
 
-    if (data.subscriptions && data.subscriptions.length === 0) {
-      container.textContent = "No subscriptions yet";
-      return;
+    if (description) {
+      const paragraph = document.createElement("p");
+      paragraph.textContent = description;
+      wrapper.appendChild(paragraph);
     }
 
-    if (data.subscriptions) {
-      const list = document.createElement("ul");
-      data.subscriptions.forEach(sub => {
-        const li = document.createElement("li");
-        li.textContent = `${sub.product} | Status: ${sub.status} | Started: ${sub.start_date}`;
+    if (action && action.href && action.label) {
+      const actionEl = document.createElement("a");
+      actionEl.className = "btn";
+      actionEl.href = action.href;
+      actionEl.textContent = action.label;
+      wrapper.appendChild(actionEl);
+    }
 
-        if (sub.status === "active") {
-          const btn = document.createElement("button");
-          btn.textContent = "Cancel";
-          btn.onclick = () => {
-            fetch(`/subscriptions/${sub.id}/cancel`, { method: "POST" })
-              .then(() => location.reload());
-          };
-          li.appendChild(btn);
+    dashboardContent.appendChild(wrapper);
+  };
+
+  const formatDate = (dateString) => {
+    const parts = (dateString || "").split("-").map(Number);
+    if (parts.length !== 3 || parts.some(Number.isNaN)) {
+      return dateString;
+    }
+    const [year, month, day] = parts;
+    const date = new Date(year, month - 1, day);
+    return date.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    });
+  };
+
+  const getStatusDescription = (status) => {
+    const normalized = (status || "").toLowerCase();
+    if (normalized === "active") {
+      return "This subscription is active and will renew automatically.";
+    }
+    if (normalized === "canceled" || normalized === "cancelled") {
+      return "This subscription has been canceled and won't renew.";
+    }
+    if (normalized === "pending") {
+      return "This subscription is pending. We'll update you once it becomes active.";
+    }
+    if (normalized === "paused") {
+      return "This subscription is paused. Resume it when you're ready.";
+    }
+    return `Current status: ${status || "Unknown"}.`;
+  };
+
+  const createStatCard = ({ icon, label, value, badge, modifier }) => {
+    const card = document.createElement("div");
+    card.className = ["stat-card", modifier].filter(Boolean).join(" ");
+
+    const iconEl = document.createElement("span");
+    iconEl.className = "stat-card__icon";
+    iconEl.textContent = icon;
+    card.appendChild(iconEl);
+
+    const labelEl = document.createElement("span");
+    labelEl.className = "stat-card__label";
+    labelEl.textContent = label;
+    card.appendChild(labelEl);
+
+    const valueEl = document.createElement("span");
+    valueEl.className = "stat-card__value";
+    valueEl.textContent = value;
+    card.appendChild(valueEl);
+
+    if (badge) {
+      const badgeEl = document.createElement("span");
+      badgeEl.className = "stat-card__badge";
+      badgeEl.textContent = badge;
+      card.appendChild(badgeEl);
+    }
+
+    return card;
+  };
+
+  const renderSubscriptions = (subscriptions) => {
+    dashboardContent.innerHTML = "";
+
+    const total = subscriptions.length;
+    const statusCounts = subscriptions.reduce((acc, sub) => {
+      const status = (sub.status || "").toLowerCase();
+      acc[status] = (acc[status] || 0) + 1;
+      return acc;
+    }, {});
+    const activeCount = statusCounts["active"] || 0;
+    const canceledCount = statusCounts["canceled"] || statusCounts["cancelled"] || 0;
+    const otherCount = Math.max(total - activeCount - canceledCount, 0);
+
+    const stats = document.createElement("div");
+    stats.className = "dashboard-stats";
+    stats.appendChild(createStatCard({
+      icon: "📦",
+      label: "Total subscriptions",
+      value: total,
+      badge: total === 1 ? "Single plan" : "Across all plans"
+    }));
+    stats.appendChild(createStatCard({
+      icon: "🟢",
+      label: "Active plans",
+      value: activeCount,
+      badge: total ? `${Math.round((activeCount / total) * 100)}% active` : "No active plans yet",
+      modifier: "stat-card--positive"
+    }));
+    stats.appendChild(createStatCard({
+      icon: "🛑",
+      label: "Canceled",
+      value: canceledCount,
+      badge: canceledCount ? "Will not renew" : "No cancellations",
+      modifier: "stat-card--neutral"
+    }));
+    if (otherCount > 0) {
+      stats.appendChild(createStatCard({
+        icon: "⏳",
+        label: "Other statuses",
+        value: otherCount,
+        badge: "In transition",
+        modifier: "stat-card--warning"
+      }));
+    }
+    dashboardContent.appendChild(stats);
+
+    const grid = document.createElement("div");
+    grid.className = "subscription-grid";
+
+    subscriptions.forEach((sub) => {
+      const card = document.createElement("article");
+      card.className = "subscription-card";
+
+      const top = document.createElement("div");
+      top.className = "subscription-card__top";
+
+      const title = document.createElement("h3");
+      title.className = "subscription-card__title";
+      title.textContent = sub.product;
+      top.appendChild(title);
+
+      const statusSlug = (sub.status || "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-");
+
+      const statusPill = document.createElement("span");
+      statusPill.className = ["status-pill", statusSlug ? `status-pill--${statusSlug}` : ""]
+        .filter(Boolean)
+        .join(" ");
+      statusPill.textContent = sub.status;
+      top.appendChild(statusPill);
+
+      card.appendChild(top);
+
+      const description = document.createElement("p");
+      description.className = "subscription-card__description";
+      description.textContent = getStatusDescription(sub.status);
+      card.appendChild(description);
+
+      const meta = document.createElement("dl");
+      meta.className = "subscription-card__meta";
+
+      const startLabel = document.createElement("dt");
+      startLabel.textContent = "Start date";
+      meta.appendChild(startLabel);
+
+      const startValue = document.createElement("dd");
+      startValue.textContent = formatDate(sub.start_date);
+      meta.appendChild(startValue);
+
+      card.appendChild(meta);
+
+      const normalizedStatus = (sub.status || "").toLowerCase();
+      if (normalizedStatus === "active") {
+        const actions = document.createElement("div");
+        actions.className = "subscription-card__actions";
+
+        const cancelBtn = document.createElement("button");
+        cancelBtn.type = "button";
+        cancelBtn.className = "btn btn-cancel";
+        cancelBtn.textContent = "Cancel plan";
+
+        cancelBtn.addEventListener("click", () => {
+          cancelBtn.disabled = true;
+          cancelBtn.textContent = "Cancelling...";
+
+          fetch(`/subscriptions/${sub.id}/cancel`, { method: "POST" })
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error("cancel_failed");
+              }
+            })
+            .then(loadDashboard)
+            .catch(() => {
+              cancelBtn.disabled = false;
+              cancelBtn.textContent = "Cancel plan";
+              alert("We couldn't cancel this subscription right now. Please try again.");
+            });
+        });
+
+        actions.appendChild(cancelBtn);
+        card.appendChild(actions);
+      }
+
+      grid.appendChild(card);
+    });
+
+    dashboardContent.appendChild(grid);
+  };
+
+  function loadDashboard() {
+    renderLoading();
+
+    fetch("/dashboard/data")
+      .then(async (response) => {
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          const error = payload.error || "request_failed";
+          throw new Error(error);
+        }
+        return payload;
+      })
+      .then((data) => {
+        if (!data.subscriptions || data.subscriptions.length === 0) {
+          renderCallout({
+            variant: "empty",
+            title: "No subscriptions yet",
+            description: "When you subscribe to a product, it will appear here so you can manage it easily."
+          });
+          return;
         }
 
-        list.appendChild(li);
+        renderSubscriptions(data.subscriptions);
+      })
+      .catch((error) => {
+        if (error.message === "not_logged_in") {
+          renderCallout({
+            variant: "error",
+            title: "You're not signed in",
+            description: "Log in to view and manage your subscriptions.",
+            action: loginUrl ? { href: loginUrl, label: "Go to login" } : undefined
+          });
+          return;
+        }
+
+        renderCallout({
+          variant: "error",
+          title: "Something went wrong",
+          description: "We couldn't load your dashboard data. Please refresh the page and try again."
+        });
       });
-      container.appendChild(list);
     }
-  })
-  .catch(() => {
-    document.getElementById("dashboard-content").textContent = "Error loading dashboard.";
-  });
+  loadDashboard();
+})();
 </script>
 {% endblock %}
