@@ -1,61 +1,245 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Available Products</h1>
+<div class="products-page">
+  <section class="products-hero">
+    <div class="products-hero__text">
+      <p class="products-hero__eyebrow">Latest arrivals</p>
+      <h1 class="products-hero__title">Available Products</h1>
+      <p class="products-hero__subtitle">
+        Browse a curated catalogue of digital products crafted to help you and your team
+        move faster. Use the search and sorting tools below to quickly find exactly what
+        you need.
+      </p>
+    </div>
+    {% if is_admin %}
+      <div class="products-hero__actions">
+        <a class="btn products-hero__button" href="{{ url_for('products.add_product') }}">
+          <span aria-hidden="true">＋</span>
+          Add new product
+        </a>
+        <p class="products-hero__hint">Admins can add new listings in just a few clicks.</p>
+      </div>
+    {% endif %}
+  </section>
 
-{% if is_admin %}
-  <a href="{{ url_for('products.add_product') }}">Add New Product</a>
-{% endif %}
+<section class="products-toolbar">
+    <div class="products-search">
+      <label class="sr-only" for="product-search">Search products</label>
+      <svg class="products-search__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+        <path d="M21 21l-4.35-4.35m2.1-5.4a6.75 6.75 0 11-13.5 0 6.75 6.75 0 0113.5 0z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <input
+        id="product-search"
+        class="products-search__input"
+        type="search"
+        name="search"
+        placeholder="Search by name or description..."
+        autocomplete="off"
+      >
+    </div>
 
 <!-- Product container -->
-<div id="product-list" data-is-admin="{{ is_admin | tojson }}"></div>
+<div class="products-sort">
+      <label for="product-sort">Sort by</label>
+      <select id="product-sort" class="products-sort__select" name="sort">
+        <option value="featured" selected>Featured</option>
+        <option value="price-asc">Price: Low to High</option>
+        <option value="price-desc">Price: High to Low</option>
+        <option value="name">Name (A–Z)</option>
+      </select>
+    </div>
+  </section>
+
+  <section class="products-content">
+    <div id="product-list" class="product-grid" data-is-admin="{{ is_admin | tojson }}"></div>
+    <div id="product-empty" class="product-empty" hidden>
+      <div class="product-empty__icon" aria-hidden="true">🛒</div>
+      <h3>No products match your search</h3>
+      <p>Try adjusting the filters or come back soon for fresh arrivals.</p>
+    </div>
+  </section>
+</div>
 
 <script>
-  // Flag vinda do Flask (sem erros no VS Code)
-  const IS_ADMIN = JSON.parse(
-    document.getElementById("product-list").dataset.isAdmin
-  );
+  const productListEl = document.getElementById("product-list");
+  const emptyStateEl = document.getElementById("product-empty");
+  const emptyStateTitle = emptyStateEl?.querySelector("h3");
+  const emptyStateMessage = emptyStateEl?.querySelector("p");
+  const emptyStateDefaults = {
+    title: emptyStateTitle?.textContent || "",
+    message: emptyStateMessage?.textContent || "",
+  };
+  const searchInput = document.getElementById("product-search");
+  const sortSelect = document.getElementById("product-sort");
+  const IS_ADMIN = JSON.parse(productListEl.dataset.isAdmin || "false");
+
+  let allProducts = [];
 
   // Fetch products from Flask backend
   function loadProducts() {
+    productListEl.classList.add("product-grid--loading");
     fetch("/products/all")
       .then(response => response.json())
       .then(data => {
-        const list = document.getElementById("product-list");
-        list.innerHTML = ""; // Clear before adding
-
-        data.forEach(product => {
-          const card = document.createElement("div");
-          card.className = "product-card";
-
-          // Product info
-          let html = `
-            <h3>${product.name}</h3>
-            <p><strong>Price:</strong> $${product.price}</p>
-          `;
-
-          if (product.description) {
-            html += `<p>${product.description}</p>`;
-          }
-
-          if (product.image_url) {
-            html += `<img src="${product.image_url}" alt="${product.name}" class="product-image">`;
-          } else {
-            html += `<img src="https://via.placeholder.com/150" alt="placeholder" class="product-image">`;
-          }
-
-          // Delete button only if admin
-          if (IS_ADMIN) {
-            html += `<button onclick="deleteProduct(${product.id})">Delete</button>`;
-          }
-          html += `<button onclick="addToCart(${product.id})">Add to Cart</button>`;
-          card.innerHTML = html;
-          list.appendChild(card);
-        });
+        allProducts = Array.isArray(data) ? data : [];
+        applyFilters();
+      })
+      .catch(error => {
+        console.error("Failed to load products:", error);
+        allProducts = [];
+        productListEl.innerHTML = "";
+        if (emptyStateTitle && emptyStateMessage) {
+          emptyStateTitle.textContent = "We couldn't load the products";
+          emptyStateMessage.textContent = "Please refresh the page or try again later.";
+        }
+        emptyStateEl.hidden = false;
+      })
+      .finally(() => {
+        productListEl.classList.remove("product-grid--loading");
       });
+  }
+
+  function renderProducts(products) {
+    productListEl.innerHTML = "";
+
+    if (emptyStateTitle && emptyStateMessage) {
+      emptyStateTitle.textContent = emptyStateDefaults.title;
+      emptyStateMessage.textContent = emptyStateDefaults.message;
+    }
+
+    if (!products.length) {
+      emptyStateEl.hidden = false;
+      return;
+    }
+
+    emptyStateEl.hidden = true;
+
+    products.forEach(product => {
+      const card = document.createElement("article");
+      card.className = "product-card";
+
+      const imageWrapper = document.createElement("div");
+      imageWrapper.className = "product-card__image-wrapper";
+      const image = document.createElement("img");
+      image.className = "product-card__image";
+      image.loading = "lazy";
+      image.src = product.image_url || "https://dummyimage.com/600x400/eff2f7/6c757d&text=No+Image";
+      image.alt = product.name || "Product image";
+      image.addEventListener("error", () => {
+        image.src = "https://dummyimage.com/600x400/eff2f7/6c757d&text=No+Image";
+      }, { once: true });
+      imageWrapper.appendChild(image);
+
+      const body = document.createElement("div");
+      body.className = "product-card__body";
+
+      const title = document.createElement("h3");
+      title.className = "product-card__title";
+      title.textContent = product.name || "Untitled product";
+
+      const price = document.createElement("div");
+      price.className = "product-card__price";
+      price.textContent = formatPrice(product.price);
+
+      body.appendChild(title);
+      body.appendChild(price);
+
+      if (product.description) {
+        const description = document.createElement("p");
+        description.className = "product-card__description";
+        description.textContent = product.description;
+        body.appendChild(description);
+      }
+
+      const actions = document.createElement("div");
+      actions.className = "product-card__actions";
+
+      const addButton = document.createElement("button");
+      addButton.type = "button";
+      addButton.className = "btn product-card__button";
+      addButton.dataset.action = "add";
+      addButton.textContent = "Add to cart";
+      addButton.addEventListener("click", () => addToCart(product.id));
+      actions.appendChild(addButton);
+
+      if (IS_ADMIN) {
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "btn btn-danger product-card__button--secondary";
+        deleteButton.dataset.action = "delete";
+        deleteButton.textContent = "Delete";
+        deleteButton.addEventListener("click", () => deleteProduct(product.id));
+        actions.appendChild(deleteButton);
+      }
+
+      card.appendChild(imageWrapper);
+      card.appendChild(body);
+      card.appendChild(actions);
+      productListEl.appendChild(card);
+    });
+  }
+
+  function applyFilters() {
+    const query = (searchInput?.value || "").trim().toLowerCase();
+    const sortValue = sortSelect?.value || "featured";
+
+    const filtered = allProducts.filter(product => {
+      if (!query) {
+        return true;
+      }
+
+      const name = (product.name || "").toLowerCase();
+      const description = (product.description || "").toLowerCase();
+      return name.includes(query) || description.includes(query);
+    });
+
+    const sorted = sortProducts(filtered, sortValue);
+    renderProducts(sorted);
+  }
+
+  function sortProducts(products, sortValue) {
+    const sorted = [...products];
+
+    switch (sortValue) {
+      case "price-asc":
+        return sorted.sort((a, b) => toNumber(a.price) - toNumber(b.price));
+      case "price-desc":
+        return sorted.sort((a, b) => toNumber(b.price) - toNumber(a.price));
+      case "name":
+        return sorted.sort((a, b) => (a.name || "").localeCompare(b.name || "", undefined, { sensitivity: "base" }));
+      default:
+        return sorted;
+    }
+  }
+
+  function toNumber(value) {
+    if (typeof value === "number") {
+      return Number.isFinite(value) ? value : 0;
+    }
+
+    if (typeof value === "string") {
+      const normalized = value.replace(/[^0-9.,-]/g, "").replace(/,/g, "");
+      const parsed = Number(normalized);
+      return Number.isFinite(parsed) ? parsed : 0;
+    }
+
+    const numberValue = Number(value);
+    return Number.isFinite(numberValue) ? numberValue : 0;
+  }
+
+  function formatPrice(value) {
+    const numberValue = toNumber(value);
+    return numberValue.toLocaleString("en-US", {
+      style: "currency",
+      currency: "USD",
+    });
   }
 
   // Delete a product by ID
   function deleteProduct(productId) {
+    if (!confirm("Are you sure you want to delete this product?")) {
+      return;
+    }
     fetch(`/products/delete/${productId}`, { method: "POST" })
       .then(response => response.json())
       .then(data => {
@@ -70,7 +254,7 @@
 
   // Add product to cart
   function addToCart(productId) {
-    fetch(`/cart/add/${productId}`, { method: 'POST' })
+    fetch(`/cart/add/${productId}`, { method: "POST" })
       .then(async res => {
         const data = await res.json();
         if (!res.ok) {
@@ -83,12 +267,22 @@
         for (const qty of Object.values(data.cart)) {
           totalItems += qty;
         }
-        document.getElementById('cart-count').textContent = totalItems;
+        document.getElementById("cart-count").textContent = totalItems;
         if (data.message) {
           console.log(data.message);
         }
       })
-      .catch(error => console.error('Error adding to cart:', error));
+      .catch(error => console.error("Error adding to cart:", error));
+  }
+
+  if (searchInput) {
+    searchInput.addEventListener("input", () => {
+      window.requestAnimationFrame(applyFilters);
+    });
+  }
+
+  if (sortSelect) {
+    sortSelect.addEventListener("change", applyFilters);
   }
 
   // Load products on page load
