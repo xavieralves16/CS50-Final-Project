@@ -1,3 +1,5 @@
+"""Subscription routes exposing CRUD-style operations."""
+
 from flask import Blueprint, request, jsonify, render_template, session
 from app.models import db, Subscription, Product, User
 
@@ -28,7 +30,7 @@ def get_subscriptions():
 
 @subscriptions_bp.route("/create", methods=["POST"])
 def create_subscription():
-    """Create new subscription (from frontend or API)"""
+    """Create a new subscription record."""
     data = request.get_json()
     new_sub = Subscription(
         user_id=data["user_id"],
