@@ -1,10 +1,15 @@
+"""Cart management routes handling cart state and subscription checks."""
+
 from flask import Blueprint, session, render_template, jsonify, redirect, url_for, flash
 from app.models import Product, Subscription
 
+# Cart content is tracked in the user session; this blueprint exposes helpers
+# to read, mutate and validate that cart against business rules.
 cart_bp = Blueprint("cart", __name__, url_prefix="/cart")
 
 @cart_bp.route("/", methods=["GET"])
 def view_cart():
+    """Render the cart page populated with session-backed items."""
     cart = session.get("cart", {})
     items = []
     total = 0.0
@@ -24,6 +29,7 @@ def view_cart():
 
 @cart_bp.route("/add/<int:product_id>", methods=["POST"])
 def add_to_cart(product_id):
+    """Insert a product in the cart while preventing duplicates."""
     cart = session.get("cart", {})
     pid = str(product_id)
     if pid in cart:
@@ -31,6 +37,7 @@ def add_to_cart(product_id):
 
     user = session.get("user")
     if user:
+        # Logged-in customers cannot add a product they already subscribe to.
         active_subscription = Subscription.query.filter_by(
             user_id=user["id"], product_id=product_id, status="active"
         ).first()
@@ -54,6 +61,7 @@ def add_to_cart(product_id):
 
 @cart_bp.route("/remove/<int:product_id>", methods=["POST"])
 def remove_from_cart(product_id):
+    """Remove a product from the cart; ignores unknown IDs."""
     cart = session.get("cart", {})
     pid = str(product_id)
     if pid in cart:
@@ -65,11 +73,13 @@ def remove_from_cart(product_id):
 
 @cart_bp.route("/clear", methods=["POST"])
 def clear_cart():
+    """Reset the cart to an empty dictionary."""
     session["cart"] = {}
     return jsonify({"message": "Cart cleared"})
 
 @cart_bp.route("/checkout", methods=["GET"])
 def checkout():
+    """Ensure the cart contains items before redirecting to checkout."""
     if not session.get("user"):
         flash("You need to log in to proceed to checkout.", "warning")
         return redirect(url_for("auth.login_page"))
