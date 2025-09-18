@@ -1,3 +1,5 @@
+"""Payment and checkout flows backed by Stripe."""
+
 import stripe
 from flask import Blueprint, render_template, session, current_app, url_for, redirect
 from app.models import Product, Subscription, Payment, db
@@ -6,7 +8,7 @@ payments_bp = Blueprint("payments", __name__, url_prefix="/payments")
 
 
 def compute_cart_total_and_items():
-    """Calcula o total e os itens do carrinho."""
+    """Return the total value of the cart and the hydrated item list."""
     cart = session.get("cart", {})
     items = []
     total = 0.0
@@ -31,7 +33,7 @@ def compute_cart_total_and_items():
 
 @payments_bp.route("/", methods=["GET"])
 def payments_page():
-    """Página inicial do checkout"""
+    """Render the checkout review page before redirecting to Stripe."""
     total, items = compute_cart_total_and_items()
     if total <= 0:
         return redirect(url_for("cart.view_cart"))
@@ -47,7 +49,7 @@ def payments_page():
 
 @payments_bp.route("/create-checkout-session", methods=["POST"])
 def create_checkout_session():
-    """Cria sessão de pagamento segura no Stripe."""
+    """Create a Stripe Checkout Session and redirect the user to pay."""
     stripe.api_key = current_app.config["STRIPE_SECRET_KEY"]
 
     total, items = compute_cart_total_and_items()
@@ -115,6 +117,7 @@ def success():
 
 @payments_bp.route("/cancel")
 def cancel():
+    """Render a cancellation message when the user aborts payment."""
     return render_template("payment_result.html",
                            message="Payment Canceled!",
                            status="failed",
