@@ -1,16 +1,21 @@
+"""Dashboard routes exposing the authenticated user overview."""
+
 from flask import Blueprint, jsonify, session, render_template
 from app.models import User
 
+# Dashboard blueprint aggregates data for logged-in customers.
 dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/dashboard")
 
 #HTML Page
 @dashboard_bp.route("/", methods=["GET"])
 def dashboard_page():
+    """Serve the dashboard shell; data is fetched asynchronously."""
     return render_template("dashboard.html", title="Dashboard")
 
 # Endpoint para fornecer dados em JSON
 @dashboard_bp.route("/data", methods=["GET"])
 def dashboard_data():
+    """Return subscription data for the logged-in user as JSON."""
     if "user" not in session:
         return jsonify({"error": "not_logged_in"}), 401
 
