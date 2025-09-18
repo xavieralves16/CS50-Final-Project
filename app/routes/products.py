@@ -1,3 +1,5 @@
+"""Product catalogue routes for listing, creating and deleting products."""
+
 from flask import Blueprint, request, jsonify, render_template, redirect, url_for, session, flash
 from app.models import db, Product
 import os
@@ -10,10 +12,11 @@ products_bp = Blueprint("products", __name__, url_prefix="/products")
 # ------------------------
 @products_bp.route("/", methods=["GET"])
 def products_page():
-    """Render index page with products list"""
+    """Render the main catalogue page."""
     return render_template(
         "index.html",
         title="Products",
+        # Expose admin flag so the frontend can toggle privileged controls.
         is_admin=session.get("user", {}).get("is_admin", False)  # <-- flag for Jinja/JS
     )
 
@@ -57,7 +60,7 @@ def add_product():
 # ------------------------
 @products_bp.route("/all", methods=["GET"])
 def get_all_products():
-    """Return all products as JSON"""
+    """Return all products as JSON for client-side rendering."""
     products = Product.query.all()
     data = []
     for p in products:
