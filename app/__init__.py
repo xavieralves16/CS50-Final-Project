@@ -1,14 +1,17 @@
+"""Application factory and global objects for the CS50 final project."""
+
 import os
 from flask import Flask, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from .config import Config
 from werkzeug.security import generate_password_hash
 
-
+# SQLAlchemy instance shared across the application. It is initialised
+# with the Flask app inside ``create_app`` to keep the module import-safe.
 db = SQLAlchemy()
 
 def create_app():
-    """Factory function to create and configure the Flask app"""
+    """Create, configure and return a fully initialised Flask application."""
     app = Flask(__name__)
     app.config.from_object(Config)  # Use centralized config
 
@@ -30,7 +33,8 @@ def create_app():
         from app.models import User   # <-- import User model here
         db.create_all()
 
-         # ✅ Ensure default admin exists with a hashed password
+        # Ensure that a deterministic administrator account exists so that
+        # the back-office can be accessed immediately after deployment.
         admin = User.query.filter_by(email="admin@example.com").first()
         if not admin:
             admin = User(
@@ -43,10 +47,13 @@ def create_app():
             db.session.commit()
         
         elif not admin.password.startswith("pbkdf2:"):
+            # Early data used plain-text passwords; migrate them lazily by
+            # hashing on first run.
             admin.password = generate_password_hash("1234")
             db.session.commit()
 
-        # Import blueprints after database creation
+        # Register blueprints once the database is ready so views can use the
+        # models without risking premature imports.
         from app.routes.auth import auth_bp
         from app.routes.dashboard import dashboard_bp
         from app.routes.products import products_bp
@@ -64,6 +71,7 @@ def create_app():
         # Root route redirects to products page
         @app.route("/")
         def home():
+            """Redirect the root URL to the public product catalogue."""
             return redirect(url_for("products.products_page"))
 
     return app
