@@ -30,11 +30,11 @@ document.getElementById("register-form").addEventListener("submit", async functi
   const result = await response.json();
 
   if (response.ok) {
-    // ✅ Registration success → redirect to login page
+    // Registration success → redirect to login page
     alert(result.message || "Registration successful!");
     window.location.href = "/auth/login";
   } else {
-    // ❌ Show error if backend responded with an error
+    // Show error if backend responded with an error
     alert(result.error || "Registration failed.");
   }
 });
