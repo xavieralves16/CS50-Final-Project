@@ -53,7 +53,7 @@ CS50-Final-Project/
    pip install -r requirements.txt
    ```
 4. **Configure environment variables**
-   - Copy `.env.example` to `.env` (or create a new `.env`).
+   - Create a new `.env`.
    - Provide values for `SECRET_KEY`, `STRIPE_PUBLIC_KEY`, and `STRIPE_SECRET_KEY`.
 
 5. **Initialize the database**
