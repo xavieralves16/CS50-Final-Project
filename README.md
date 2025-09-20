@@ -74,3 +74,5 @@ CS50-Final-Project/
 - The Flask and Stripe documentation communities for comprehensive resources.
 
 Enjoy exploring StreamBox Subscriptions! Feel free to open issues or reach out with suggestions.
+
+<img width="2112" height="1632" alt="image" src="https://github.com/user-attachments/assets/e45919f8-8432-4596-83d1-9337d6d62726" />
