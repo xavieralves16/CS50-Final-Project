@@ -72,7 +72,7 @@ CS50-Final-Project/
 ## Demo Video
 _A walkthrough video demonstrating the project workflow will be linked here._
 
-**Video link:** <PLACEHOLDER_FOR_VIDEO_URL>
+**Video link:** [<PLACEHOLDER_FOR_VIDEO_URL>](https://drive.google.com/file/d/18kGbdXVqmGpRnzcJI-ysUNqr8vgRK_6Q/view?usp=drive_link)
 
 ## Acknowledgements
 - Harvard CS50 for the guidance, lectures, and starter materials that inspired this capstone.
