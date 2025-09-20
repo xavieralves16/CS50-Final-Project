@@ -1,6 +1,6 @@
 # StreamBox Subscriptions
-
-## Overview
+#### Video Demo:  [<Streambox_Subscriptions>](https://drive.google.com/file/d/18kGbdXVqmGpRnzcJI-ysUNqr8vgRK_6Q/view?usp=drive_link)
+#### Description:
 StreamBox Subscriptions is my CS50 final project: a subscription-based e-commerce experience inspired by platforms like Netflix, Amazon Prime, and other monthly membership services. The application lets visitors explore digital plans, add them to a cart, and complete their purchase while administrators manage the catalog and keep track of active subscriptions.
 
 Although modern subscription platforms are usually implemented as Single Page Applications (SPAs) with frontend frameworks, I rebuilt the SPA-style experience using **Flask**, the primary web framework covered in CS50. By combining template partials, JavaScript-driven interactions, and Flask blueprints, the project delivers smooth client-side navigation while staying within the course tooling.
@@ -68,11 +68,6 @@ CS50-Final-Project/
    flask --app run.py --debug run
    ```
    Visit `http://127.0.0.1:5000/` to explore the storefront. Use `admin@example.com` / `1234` to sign in as the default administrator.
-
-## Demo Video
-_A walkthrough video demonstrating the project workflow will be linked here._
-
-**Video link:** [<Streambox_Subscriptions>](https://drive.google.com/file/d/18kGbdXVqmGpRnzcJI-ysUNqr8vgRK_6Q/view?usp=drive_link)
 
 ## Acknowledgements
 - Harvard CS50 for the guidance, lectures, and starter materials that inspired this capstone.
